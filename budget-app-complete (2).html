@@ -1446,6 +1446,7 @@
                     <span class="budget-label">Reste disponible</span>
                     <span class="budget-amount positive" id="budget-amount">0 €</span>
                     <span class="daily-budget" id="daily-budget">Par jour: <strong>0 €</strong></span>
+                    <span class="daily-budget" id="carryover-display" style="display: none;">Report du mois précédent: <strong>0 €</strong></span>
                     <span class="save-indicator" id="save-indicator">Enregistré</span>
                 </div>
             </div>
@@ -1479,6 +1480,9 @@
                             <div id="fixed-expenses-list"></div>
                             <button class="btn-add" id="add-fixed-expense">
                                 <i data-lucide="plus"></i> Ajouter une dépense
+                            </button>
+                            <button class="btn-add" id="copy-from-previous" style="margin-top: 8px; border-style: solid; opacity: 0.7;">
+                                <i data-lucide="copy"></i> Copier depuis le mois précédent
                             </button>
                         </div>
                     </div>
@@ -1850,8 +1854,30 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-primary" onclick="closeWelcomeModal()" style="width: 100%; padding: var(--space-xl);">
-                    C'est parti ! 🚀
+                    C'est parti !
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="modal-delete-confirm">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmer la suppression</h3>
+                <button class="btn-close" onclick="closeModal('modal-delete-confirm')">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Êtes-vous sûr de vouloir supprimer <strong id="delete-item-name"></strong> ?
+                </p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: var(--space-md);">
+                    Cette action est irréversible.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('modal-delete-confirm')">Annuler</button>
+                <button class="btn-primary" id="confirm-delete-btn" style="background: var(--accent-danger);">Supprimer</button>
             </div>
         </div>
     </div>
@@ -1919,29 +1945,30 @@
         }
 
         // State management
-        let currentMonth = new Date(2025, 7, 1);
+        let currentMonth = new Date();
+        currentMonth.setDate(1); // Start at first day of current month
         let budgetData = {
             accounts: [
-                { name: 'Compte Courant', amount: 2056.38 },
-                { name: 'Livret B', amount: 0 },
-                { name: 'Livret Jeune', amount: 0 }
+                { id: 'acc_1', name: 'Compte Courant', amount: 2056.38 },
+                { id: 'acc_2', name: 'Livret B', amount: 0 },
+                { id: 'acc_3', name: 'Livret Jeune', amount: 0 }
             ],
             income: [
-                { category: 'Salaire Leclerc', amount: 750, icon: 'briefcase', recurring: true }
+                { id: 'inc_1', category: 'Salaire Leclerc', amount: 750, icon: 'briefcase', recurring: true }
             ],
             fixedExpenses: [
-                { category: 'Loyer', amount: 200, icon: 'home', recurring: true },
-                { category: 'Internet', amount: 39.99, icon: 'wifi', recurring: true },
-                { category: 'Téléphone', amount: 11.68, icon: 'wifi', recurring: true },
-                { category: 'Assurance', amount: 14.53, icon: 'heart-pulse', recurring: true },
-                { category: 'Nourriture', amount: 100, icon: 'utensils', recurring: true },
-                { category: 'Frais bancaires', amount: 1.2, icon: 'building-2', recurring: true }
+                { id: 'fix_1', category: 'Loyer', amount: 200, icon: 'home', recurring: true },
+                { id: 'fix_2', category: 'Internet', amount: 39.99, icon: 'wifi', recurring: true },
+                { id: 'fix_3', category: 'Téléphone', amount: 11.68, icon: 'wifi', recurring: true },
+                { id: 'fix_4', category: 'Assurance', amount: 14.53, icon: 'heart-pulse', recurring: true },
+                { id: 'fix_5', category: 'Nourriture', amount: 100, icon: 'utensils', recurring: true },
+                { id: 'fix_6', category: 'Frais bancaires', amount: 1.2, icon: 'building-2', recurring: true }
             ],
             variableExpenses: [
-                { category: 'Restaurant (Deliveroo)', amount: 120, icon: 'utensils', recurring: false },
-                { category: 'Sorties (bars, soirées)', amount: 100, icon: 'sparkles', recurring: false },
-                { category: 'Abonnement Semi tan', amount: 24.5, icon: 'dumbbell', recurring: true },
-                { category: 'Spotify', amount: 7.5, icon: 'music', recurring: true }
+                { id: 'var_1', category: 'Restaurant (Deliveroo)', amount: 120, icon: 'utensils', recurring: false },
+                { id: 'var_2', category: 'Sorties (bars, soirées)', amount: 100, icon: 'sparkles', recurring: false },
+                { id: 'var_3', category: 'Abonnement Semi tan', amount: 24.5, icon: 'dumbbell', recurring: true },
+                { id: 'var_4', category: 'Spotify', amount: 7.5, icon: 'music', recurring: true }
             ],
             goals: [],
             previousMonthCarryover: 0
@@ -1952,8 +1979,21 @@
         let selectedIcon = 'circle-dollar-sign';
         let expensesChart = null;
         let incomeExpensesChart = null;
+        let pendingDelete = null; // Stores {type, id, name} for deletion confirmation
 
         // Utility functions
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        }
+
+        function parseLocalizedNumber(value) {
+            // Handle French decimal separator (comma) and convert to number
+            if (typeof value === 'string') {
+                value = value.replace(/\s/g, '').replace(',', '.');
+            }
+            return parseFloat(value) || 0;
+        }
+
         function formatAmount(amount) {
             return new Intl.NumberFormat('fr-FR', {
                 minimumFractionDigits: 2,
@@ -1978,25 +2018,37 @@
             return daysLeft > 0 ? daysLeft : 1;
         }
 
+        function ensureItemHasId(item) {
+            if (!item.id) item.id = generateId();
+            return item;
+        }
+
         function loadBudget(date) {
             const key = getStorageKey(date);
             const stored = localStorage.getItem(key);
             if (stored) {
                 budgetData = JSON.parse(stored);
-                // Ensure icons exist for old data
+                // Ensure icons and IDs exist for old data
+                budgetData.accounts.forEach(item => {
+                    ensureItemHasId(item);
+                });
                 budgetData.income.forEach(item => {
+                    ensureItemHasId(item);
                     if (!item.icon) item.icon = getIconForCategory(item.category);
                     if (item.recurring === undefined) item.recurring = false;
                 });
                 budgetData.fixedExpenses.forEach(item => {
+                    ensureItemHasId(item);
                     if (!item.icon) item.icon = getIconForCategory(item.category);
                     if (item.recurring === undefined) item.recurring = false;
                 });
                 budgetData.variableExpenses.forEach(item => {
+                    ensureItemHasId(item);
                     if (!item.icon) item.icon = getIconForCategory(item.category);
                     if (item.recurring === undefined) item.recurring = false;
                 });
                 if (!budgetData.goals) budgetData.goals = [];
+                budgetData.goals.forEach(item => ensureItemHasId(item));
                 if (budgetData.previousMonthCarryover === undefined) budgetData.previousMonthCarryover = 0;
             } else {
                 // Check for previous month to copy recurring items
@@ -2008,21 +2060,21 @@
                 if (prevStored) {
                     const prevData = JSON.parse(prevStored);
                     const prevBudget = calculateBudget(prevData);
-                    
+
                     budgetData = {
-                        accounts: prevData.accounts.map(a => ({...a})),
-                        income: prevData.income.filter(i => i.recurring).map(i => ({...i})),
-                        fixedExpenses: prevData.fixedExpenses.filter(e => e.recurring).map(e => ({...e})),
-                        variableExpenses: prevData.variableExpenses.filter(e => e.recurring).map(e => ({...e})),
-                        goals: prevData.goals ? prevData.goals.map(g => ({...g})) : [],
+                        accounts: prevData.accounts.map(a => ({...a, id: generateId()})),
+                        income: prevData.income.filter(i => i.recurring).map(i => ({...i, id: generateId()})),
+                        fixedExpenses: prevData.fixedExpenses.filter(e => e.recurring).map(e => ({...e, id: generateId()})),
+                        variableExpenses: prevData.variableExpenses.filter(e => e.recurring).map(e => ({...e, id: generateId()})),
+                        goals: prevData.goals ? prevData.goals.map(g => ({...g, id: generateId()})) : [],
                         previousMonthCarryover: prevBudget > 0 ? prevBudget : 0
                     };
                 } else {
                     budgetData = {
                         accounts: [
-                            { name: 'Compte Courant', amount: 0 },
-                            { name: 'Livret B', amount: 0 },
-                            { name: 'Livret Jeune', amount: 0 }
+                            { id: generateId(), name: 'Compte Courant', amount: 0 },
+                            { id: generateId(), name: 'Livret B', amount: 0 },
+                            { id: generateId(), name: 'Livret Jeune', amount: 0 }
                         ],
                         income: [],
                         fixedExpenses: [],
@@ -2069,13 +2121,24 @@
             const budget = calculateBudget();
             const budgetEl = document.getElementById('budget-amount');
             const dailyBudgetEl = document.getElementById('daily-budget');
-            
+            const carryoverEl = document.getElementById('carryover-display');
+
             budgetEl.textContent = formatAmount(budget);
-            
+
             const daysLeft = getDaysLeftInMonth();
             const dailyBudget = budget / daysLeft;
             dailyBudgetEl.innerHTML = `Par jour: <strong>${formatAmount(dailyBudget)}</strong>`;
-            
+
+            // Display carryover from previous month
+            const carryover = budgetData.previousMonthCarryover || 0;
+            if (carryover !== 0) {
+                carryoverEl.style.display = 'block';
+                const carryoverColor = carryover >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)';
+                carryoverEl.innerHTML = `Report: <strong style="color: ${carryoverColor}">${formatAmount(carryover)}</strong>`;
+            } else {
+                carryoverEl.style.display = 'none';
+            }
+
             budgetEl.className = 'budget-amount';
             if (budget > 100) {
                 budgetEl.classList.add('positive');
@@ -2088,9 +2151,19 @@
 
         // Charts
         function initCharts() {
+            // Destroy existing charts to prevent memory leaks
+            if (expensesChart) {
+                expensesChart.destroy();
+                expensesChart = null;
+            }
+            if (incomeExpensesChart) {
+                incomeExpensesChart.destroy();
+                incomeExpensesChart = null;
+            }
+
             const expensesCtx = document.getElementById('expenses-chart');
             const incomeExpensesCtx = document.getElementById('income-expenses-chart');
-            
+
             if (expensesCtx) {
                 expensesChart = new Chart(expensesCtx, {
                     type: 'doughnut',
@@ -2180,34 +2253,61 @@
             }
         }
 
+        // Calculate account balances reflecting transactions
+        function getAccountBalances() {
+            const balances = budgetData.accounts.map(acc => ({...acc}));
+            const compteCourant = balances.find(a => a.name === 'Compte Courant');
+
+            if (compteCourant) {
+                // The stored amount is the "initial balance"
+                // We add income and subtract expenses for the month's flow
+                const totalIncome = calculateTotal(budgetData.income);
+                const totalFixedExpenses = calculateTotal(budgetData.fixedExpenses);
+                const totalVariableExpenses = calculateTotal(budgetData.variableExpenses);
+
+                compteCourant.calculatedAmount = compteCourant.amount + totalIncome - totalFixedExpenses - totalVariableExpenses;
+            }
+
+            return balances;
+        }
+
         // Render functions
         function renderAccounts() {
             const lists = ['accounts-list', 'accounts-list-full'];
+            const balances = getAccountBalances();
+
             lists.forEach(listId => {
                 const list = document.getElementById(listId);
                 if (!list) return;
                 list.innerHTML = '';
 
-                budgetData.accounts.forEach((account, index) => {
+                balances.forEach((account) => {
+                    const displayAmount = account.calculatedAmount !== undefined ? account.calculatedAmount : account.amount;
+                    const isCompteC = account.name === 'Compte Courant';
+
                     const item = document.createElement('div');
                     item.className = 'account-item';
                     item.innerHTML = `
-                        <span class="account-name">${account.name}</span>
-                        <span class="account-amount" data-index="${index}">${formatAmount(account.amount)}</span>
+                        <span class="account-name">${account.name}${isCompteC ? ' <span style="font-size: 0.75rem; color: var(--text-muted);">(après transactions)</span>' : ''}</span>
+                        <span class="account-amount${isCompteC ? '' : ''}" data-id="${account.id}" data-type="accounts" ${isCompteC ? 'title="Solde initial: ' + formatAmount(account.amount) + '"' : ''}>${formatAmount(displayAmount)}</span>
                     `;
                     list.appendChild(item);
                 });
+
+                const totalAmount = balances.reduce((sum, acc) => {
+                    return sum + (acc.calculatedAmount !== undefined ? acc.calculatedAmount : acc.amount);
+                }, 0);
 
                 const total = document.createElement('div');
                 total.className = 'account-item account-total';
                 total.innerHTML = `
                     <span class="account-name">TOTAL</span>
-                    <span class="account-amount">${formatAmount(calculateTotal(budgetData.accounts))}</span>
+                    <span class="account-amount">${formatAmount(totalAmount)}</span>
                 `;
                 list.appendChild(total);
 
-                list.querySelectorAll('.account-amount[data-index]').forEach(el => {
-                    el.addEventListener('click', (e) => handleAmountEdit(e, 'accounts'));
+                list.querySelectorAll('.account-amount[data-id]').forEach(el => {
+                    el.addEventListener('click', (e) => handleAmountEdit(e));
                 });
             });
         }
@@ -2215,11 +2315,11 @@
         function renderTransactions(type, listId, totalId) {
             const list = document.getElementById(listId);
             if (!list) return;
-            
+
             const data = budgetData[type];
             list.innerHTML = '';
 
-            data.forEach((item, index) => {
+            data.forEach((item) => {
                 const div = document.createElement('div');
                 div.className = 'transaction-item';
                 div.innerHTML = `
@@ -2228,13 +2328,13 @@
                             <i data-lucide="${item.icon || 'circle-dollar-sign'}"></i>
                         </div>
                         <div class="transaction-details">
-                            <span class="transaction-name" data-type="${type}" data-index="${index}">${item.category}</span>
+                            <span class="transaction-name" data-type="${type}" data-id="${item.id}">${item.category}</span>
                             ${item.recurring ? '<span class="transaction-recurring">Récurrent</span>' : ''}
                         </div>
                     </div>
                     <div class="transaction-right">
-                        <span class="transaction-amount" data-type="${type}" data-index="${index}">${formatAmount(item.amount)}</span>
-                        <button class="btn-delete" data-type="${type}" data-index="${index}">
+                        <span class="transaction-amount" data-type="${type}" data-id="${item.id}">${formatAmount(item.amount)}</span>
+                        <button class="btn-delete" data-type="${type}" data-id="${item.id}">
                             <i data-lucide="trash-2"></i>
                         </button>
                     </div>
@@ -2252,7 +2352,7 @@
             });
 
             list.querySelectorAll('.transaction-amount').forEach(el => {
-                el.addEventListener('click', (e) => handleAmountEdit(e, type));
+                el.addEventListener('click', (e) => handleAmountEdit(e));
             });
 
             list.querySelectorAll('.btn-delete').forEach(el => {
@@ -2308,7 +2408,7 @@
                 return;
             }
 
-            budgetData.goals.forEach((goal, index) => {
+            budgetData.goals.forEach((goal) => {
                 const progress = (goal.current / goal.target) * 100;
                 const div = document.createElement('div');
                 div.className = 'goal-item';
@@ -2325,7 +2425,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deleteGoal(${index})">
+                        <button class="btn-delete" onclick="deleteGoal('${goal.id}')">
                             <i data-lucide="trash-2"></i>
                         </button>
                     </div>
@@ -2354,13 +2454,26 @@
             lucide.createIcons();
         }
 
+        // Helper to find item by ID
+        function findItemById(type, id) {
+            return budgetData[type].find(item => item.id === id);
+        }
+
+        function findItemIndexById(type, id) {
+            return budgetData[type].findIndex(item => item.id === id);
+        }
+
         // Inline editing handlers
-        function handleAmountEdit(e, type) {
+        function handleAmountEdit(e) {
             if (editingElement) return;
-            
+
             const el = e.target;
-            const index = parseInt(el.dataset.index);
-            const currentValue = budgetData[type][index].amount;
+            const type = el.dataset.type;
+            const id = el.dataset.id;
+            const item = findItemById(type, id);
+            if (!item) return;
+
+            const currentValue = item.amount;
 
             editingElement = el;
             const input = document.createElement('input');
@@ -2369,8 +2482,8 @@
             input.value = currentValue;
 
             const finish = () => {
-                const newValue = parseFloat(input.value) || 0;
-                budgetData[type][index].amount = newValue;
+                const newValue = parseLocalizedNumber(input.value);
+                item.amount = newValue;
                 editingElement = null;
                 debouncedSave();
                 render();
@@ -2392,11 +2505,14 @@
 
         function handleCategoryEdit(e) {
             if (editingElement) return;
-            
+
             const el = e.target;
             const type = el.dataset.type;
-            const index = parseInt(el.dataset.index);
-            const currentValue = budgetData[type][index].category;
+            const id = el.dataset.id;
+            const item = findItemById(type, id);
+            if (!item) return;
+
+            const currentValue = item.category;
 
             editingElement = el;
             const input = document.createElement('input');
@@ -2406,7 +2522,7 @@
             const finish = () => {
                 const newValue = input.value.trim();
                 if (newValue) {
-                    budgetData[type][index].category = newValue;
+                    item.category = newValue;
                     debouncedSave();
                 }
                 editingElement = null;
@@ -2430,17 +2546,41 @@
         function handleDelete(e) {
             const btn = e.target.closest('.btn-delete');
             const type = btn.dataset.type;
-            const index = parseInt(btn.dataset.index);
-            
-            budgetData[type].splice(index, 1);
-            debouncedSave();
-            render();
+            const id = btn.dataset.id;
+            const item = findItemById(type, id);
+
+            if (item) {
+                pendingDelete = { type, id, name: item.category || item.name };
+                document.getElementById('delete-item-name').textContent = pendingDelete.name;
+                openModal('modal-delete-confirm');
+            }
         }
 
-        function deleteGoal(index) {
-            budgetData.goals.splice(index, 1);
-            debouncedSave();
-            render();
+        function deleteGoal(id) {
+            const goal = budgetData.goals.find(g => g.id === id);
+            if (goal) {
+                pendingDelete = { type: 'goals', id, name: goal.name };
+                document.getElementById('delete-item-name').textContent = pendingDelete.name;
+                openModal('modal-delete-confirm');
+            }
+        }
+
+        function confirmDelete() {
+            if (!pendingDelete) return;
+
+            const { type, id } = pendingDelete;
+            const index = type === 'goals'
+                ? budgetData.goals.findIndex(g => g.id === id)
+                : findItemIndexById(type, id);
+
+            if (index !== -1) {
+                budgetData[type].splice(index, 1);
+                debouncedSave();
+                render();
+            }
+
+            pendingDelete = null;
+            closeModal('modal-delete-confirm');
         }
 
         // Modal handling
@@ -2481,12 +2621,17 @@
 
         function submitTransaction() {
             const category = document.getElementById('transaction-category').value.trim();
-            const amount = parseFloat(document.getElementById('transaction-amount').value);
+            const amount = parseLocalizedNumber(document.getElementById('transaction-amount').value);
             const type = document.querySelector('input[name="transaction-type"]:checked').value;
             const recurring = document.getElementById('transaction-recurring').checked;
 
-            if (!category || isNaN(amount) || amount <= 0) {
-                alert('Veuillez entrer une catégorie et un montant valides');
+            if (!category) {
+                alert('Veuillez entrer une catégorie');
+                return;
+            }
+
+            if (amount <= 0) {
+                alert('Veuillez entrer un montant valide supérieur à 0');
                 return;
             }
 
@@ -2496,11 +2641,12 @@
                 variable: 'variableExpenses'
             };
 
-            budgetData[typeMap[type]].push({ 
-                category, 
-                amount, 
+            budgetData[typeMap[type]].push({
+                id: generateId(),
+                category,
+                amount,
                 icon: selectedIcon,
-                recurring 
+                recurring
             });
             
             debouncedSave();
@@ -2516,19 +2662,25 @@
 
         function submitGoal() {
             const name = document.getElementById('goal-name').value.trim();
-            const target = parseFloat(document.getElementById('goal-target').value);
-            const current = parseFloat(document.getElementById('goal-current').value) || 0;
+            const target = parseLocalizedNumber(document.getElementById('goal-target').value);
+            const current = parseLocalizedNumber(document.getElementById('goal-current').value);
 
-            if (!name || isNaN(target) || target <= 0) {
-                alert('Veuillez entrer un nom et un montant cible valides');
+            if (!name) {
+                alert('Veuillez entrer un nom pour l\'objectif');
+                return;
+            }
+
+            if (target <= 0) {
+                alert('Veuillez entrer un montant cible valide supérieur à 0');
                 return;
             }
 
             if (!budgetData.goals) budgetData.goals = [];
             
-            budgetData.goals.push({ 
-                name, 
-                target, 
+            budgetData.goals.push({
+                id: generateId(),
+                name,
+                target,
                 current,
                 icon: selectedIcon
             });
@@ -2551,6 +2703,57 @@
             currentMonth = newMonth;
             loadBudget(currentMonth);
             render();
+        }
+
+        // Copy fixed charges from previous month
+        function copyFromPreviousMonth() {
+            const prevMonth = new Date(currentMonth);
+            prevMonth.setMonth(prevMonth.getMonth() - 1);
+            const prevKey = getStorageKey(prevMonth);
+            const prevStored = localStorage.getItem(prevKey);
+
+            if (!prevStored) {
+                alert('Aucune donnée trouvée pour le mois précédent.');
+                return;
+            }
+
+            const prevData = JSON.parse(prevStored);
+            let copied = 0;
+
+            // Copy recurring income
+            prevData.income.filter(i => i.recurring).forEach(item => {
+                const exists = budgetData.income.some(i => i.category === item.category);
+                if (!exists) {
+                    budgetData.income.push({...item, id: generateId()});
+                    copied++;
+                }
+            });
+
+            // Copy recurring fixed expenses
+            prevData.fixedExpenses.filter(e => e.recurring).forEach(item => {
+                const exists = budgetData.fixedExpenses.some(e => e.category === item.category);
+                if (!exists) {
+                    budgetData.fixedExpenses.push({...item, id: generateId()});
+                    copied++;
+                }
+            });
+
+            // Copy recurring variable expenses
+            prevData.variableExpenses.filter(e => e.recurring).forEach(item => {
+                const exists = budgetData.variableExpenses.some(e => e.category === item.category);
+                if (!exists) {
+                    budgetData.variableExpenses.push({...item, id: generateId()});
+                    copied++;
+                }
+            });
+
+            if (copied > 0) {
+                debouncedSave();
+                render();
+                alert(`${copied} élément(s) récurrent(s) copié(s) depuis le mois précédent.`);
+            } else {
+                alert('Tous les éléments récurrents sont déjà présents.');
+            }
         }
 
         // Export functions
@@ -2662,9 +2865,11 @@
             selectedIcon = 'target';
             openModal('modal-goal');
         });
+        document.getElementById('copy-from-previous').addEventListener('click', copyFromPreviousMonth);
 
         document.getElementById('submit-transaction').addEventListener('click', submitTransaction);
         document.getElementById('submit-goal').addEventListener('click', submitGoal);
+        document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
 
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             modal.addEventListener('click', (e) => {
@@ -2689,6 +2894,8 @@
             if (e.key === 'Escape') {
                 closeModal('modal-transaction');
                 closeModal('modal-goal');
+                closeModal('modal-delete-confirm');
+                pendingDelete = null;
             }
 
             if (e.altKey) {
