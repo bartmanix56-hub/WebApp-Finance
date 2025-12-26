@@ -1443,10 +1443,10 @@
                     <button id="next-month" title="Mois suivant">→</button>
                 </div>
                 <div class="budget-info">
-                    <span class="budget-label">Reste disponible</span>
+                    <span class="budget-label">Solde courant</span>
                     <span class="budget-amount positive" id="budget-amount">0 €</span>
                     <span class="daily-budget" id="daily-budget">Par jour: <strong>0 €</strong></span>
-                    <span class="daily-budget" id="carryover-display" style="display: none;">Report du mois précédent: <strong>0 €</strong></span>
+                    <span class="daily-budget" id="carryover-display" style="display: none;"></span>
                     <span class="save-indicator" id="save-indicator">Enregistré</span>
                 </div>
             </div>
@@ -1459,12 +1459,12 @@
                 </div>
 
                 <div class="card">
-                    <h2><i data-lucide="wallet"></i> Budget mensuel</h2>
+                    <h2><i data-lucide="wallet"></i> Mouvements du mois</h2>
                     <div class="budget-grid">
                         <div class="budget-column">
-                            <div class="column-header">
-                                <span class="column-title">Revenus</span>
-                                <span class="column-total" id="income-total">0 €</span>
+                            <div class="column-header" style="background: rgba(34, 197, 94, 0.1); border-radius: 8px; padding: 8px;">
+                                <span class="column-title" style="color: var(--accent-success);">Entrées d'argent</span>
+                                <span class="column-total" id="income-total" style="color: var(--accent-success);">+0 €</span>
                             </div>
                             <div id="income-list"></div>
                             <button class="btn-add" id="add-income">
@@ -1473,9 +1473,9 @@
                         </div>
 
                         <div class="budget-column">
-                            <div class="column-header">
-                                <span class="column-title">Dépenses fixes</span>
-                                <span class="column-total" id="fixed-expenses-total">0 €</span>
+                            <div class="column-header" style="background: rgba(239, 68, 68, 0.1); border-radius: 8px; padding: 8px;">
+                                <span class="column-title" style="color: var(--accent-danger);">Sorties d'argent</span>
+                                <span class="column-total" id="fixed-expenses-total" style="color: var(--accent-danger);">-0 €</span>
                             </div>
                             <div id="fixed-expenses-list"></div>
                             <button class="btn-add" id="add-fixed-expense">
@@ -1488,16 +1488,10 @@
                     </div>
                 </div>
 
-                <div class="card">
-                    <h2><i data-lucide="shopping-bag"></i> Dépenses variables</h2>
-                    <div class="column-header">
-                        <span class="column-title"></span>
-                        <span class="column-total" id="variable-expenses-total">0 €</span>
-                    </div>
+                <!-- Section cachée pour compatibilité -->
+                <div style="display: none;">
+                    <span id="variable-expenses-total">0 €</span>
                     <div id="variable-expenses-list"></div>
-                    <button class="btn-add" id="add-variable-expense">
-                        <i data-lucide="plus"></i> Ajouter une dépense
-                    </button>
                 </div>
             </div>
 
@@ -1947,39 +1941,43 @@
         // State management
         let currentMonth = new Date();
         currentMonth.setDate(1); // Start at first day of current month
+
+        // NOUVELLE STRUCTURE DE DONNÉES - Modèle de compte bancaire réel
+        // Toutes les transactions sont dans une seule liste
+        // Le solde est CALCULÉ, jamais saisi directement
         let budgetData = {
+            // Comptes bancaires avec solde INITIAL du mois
             accounts: [
-                { id: 'acc_1', name: 'Compte Courant', amount: 2056.38 },
-                { id: 'acc_2', name: 'Livret B', amount: 0 },
-                { id: 'acc_3', name: 'Livret Jeune', amount: 0 }
+                { id: 'acc_1', name: 'Compte Courant', initialBalance: 2056.38 },
+                { id: 'acc_2', name: 'Livret A', initialBalance: 0 },
+                { id: 'acc_3', name: 'Livret Jeune', initialBalance: 0 }
             ],
-            income: [
-                { id: 'inc_1', category: 'Salaire Leclerc', amount: 750, icon: 'briefcase', recurring: true }
+            // Liste UNIQUE de transactions (revenus ET dépenses)
+            transactions: [
+                // Revenus (type: 'income')
+                { id: 'txn_1', category: 'Salaire Leclerc', type: 'income', amount: 750, accountId: 'acc_1', icon: 'briefcase', recurring: true },
+                // Dépenses (type: 'expense')
+                { id: 'txn_2', category: 'Loyer', type: 'expense', amount: 200, accountId: 'acc_1', icon: 'home', recurring: true },
+                { id: 'txn_3', category: 'Internet', type: 'expense', amount: 39.99, accountId: 'acc_1', icon: 'wifi', recurring: true },
+                { id: 'txn_4', category: 'Téléphone', type: 'expense', amount: 11.68, accountId: 'acc_1', icon: 'wifi', recurring: true },
+                { id: 'txn_5', category: 'Assurance', type: 'expense', amount: 14.53, accountId: 'acc_1', icon: 'heart-pulse', recurring: true },
+                { id: 'txn_6', category: 'Nourriture', type: 'expense', amount: 100, accountId: 'acc_1', icon: 'utensils', recurring: true },
+                { id: 'txn_7', category: 'Frais bancaires', type: 'expense', amount: 1.2, accountId: 'acc_1', icon: 'building-2', recurring: true },
+                { id: 'txn_8', category: 'Restaurant (Deliveroo)', type: 'expense', amount: 120, accountId: 'acc_1', icon: 'utensils', recurring: false },
+                { id: 'txn_9', category: 'Sorties (bars, soirées)', type: 'expense', amount: 100, accountId: 'acc_1', icon: 'sparkles', recurring: false },
+                { id: 'txn_10', category: 'Abonnement Sport', type: 'expense', amount: 24.5, accountId: 'acc_1', icon: 'dumbbell', recurring: true },
+                { id: 'txn_11', category: 'Spotify', type: 'expense', amount: 7.5, accountId: 'acc_1', icon: 'music', recurring: true }
             ],
-            fixedExpenses: [
-                { id: 'fix_1', category: 'Loyer', amount: 200, icon: 'home', recurring: true },
-                { id: 'fix_2', category: 'Internet', amount: 39.99, icon: 'wifi', recurring: true },
-                { id: 'fix_3', category: 'Téléphone', amount: 11.68, icon: 'wifi', recurring: true },
-                { id: 'fix_4', category: 'Assurance', amount: 14.53, icon: 'heart-pulse', recurring: true },
-                { id: 'fix_5', category: 'Nourriture', amount: 100, icon: 'utensils', recurring: true },
-                { id: 'fix_6', category: 'Frais bancaires', amount: 1.2, icon: 'building-2', recurring: true }
-            ],
-            variableExpenses: [
-                { id: 'var_1', category: 'Restaurant (Deliveroo)', amount: 120, icon: 'utensils', recurring: false },
-                { id: 'var_2', category: 'Sorties (bars, soirées)', amount: 100, icon: 'sparkles', recurring: false },
-                { id: 'var_3', category: 'Abonnement Semi tan', amount: 24.5, icon: 'dumbbell', recurring: true },
-                { id: 'var_4', category: 'Spotify', amount: 7.5, icon: 'music', recurring: true }
-            ],
-            goals: [],
-            previousMonthCarryover: 0
+            goals: []
         };
 
         let saveTimeout = null;
         let editingElement = null;
         let selectedIcon = 'circle-dollar-sign';
+        let selectedType = 'expense'; // Pour le modal
         let expensesChart = null;
         let incomeExpensesChart = null;
-        let pendingDelete = null; // Stores {type, id, name} for deletion confirmation
+        let pendingDelete = null;
 
         // Utility functions
         function generateId() {
@@ -2018,72 +2016,213 @@
             return daysLeft > 0 ? daysLeft : 1;
         }
 
-        function ensureItemHasId(item) {
-            if (!item.id) item.id = generateId();
-            return item;
+        // ============================================
+        // FONCTIONS DE CALCUL - SOURCE UNIQUE DE VÉRITÉ
+        // ============================================
+
+        // Calcule le solde courant d'un compte
+        // Formule : Solde Initial + Revenus - Dépenses
+        function getAccountBalance(accountId) {
+            const account = budgetData.accounts.find(a => a.id === accountId);
+            if (!account) return 0;
+
+            let balance = account.initialBalance || 0;
+
+            budgetData.transactions
+                .filter(t => t.accountId === accountId)
+                .forEach(t => {
+                    if (t.type === 'income') {
+                        balance += t.amount;
+                    } else {
+                        balance -= t.amount;
+                    }
+                });
+
+            return balance;
         }
+
+        // Calcule le total des revenus
+        function getTotalIncome(accountId = null) {
+            return budgetData.transactions
+                .filter(t => t.type === 'income' && (accountId === null || t.accountId === accountId))
+                .reduce((sum, t) => sum + t.amount, 0);
+        }
+
+        // Calcule le total des dépenses
+        function getTotalExpenses(accountId = null) {
+            return budgetData.transactions
+                .filter(t => t.type === 'expense' && (accountId === null || t.accountId === accountId))
+                .reduce((sum, t) => sum + t.amount, 0);
+        }
+
+        // Récupère les transactions par type
+        function getTransactionsByType(type) {
+            return budgetData.transactions.filter(t => t.type === type);
+        }
+
+        // Migration des anciennes données vers le nouveau format
+        function migrateOldData(oldData) {
+            // Si déjà au nouveau format
+            if (oldData.transactions) {
+                return oldData;
+            }
+
+            // Conversion de l'ancien format
+            const transactions = [];
+            const mainAccountId = oldData.accounts[0]?.id || 'acc_1';
+
+            // Convertir les revenus
+            if (oldData.income) {
+                oldData.income.forEach(item => {
+                    transactions.push({
+                        id: item.id || generateId(),
+                        category: item.category,
+                        type: 'income',
+                        amount: item.amount,
+                        accountId: mainAccountId,
+                        icon: item.icon || getIconForCategory(item.category),
+                        recurring: item.recurring || false
+                    });
+                });
+            }
+
+            // Convertir les dépenses fixes
+            if (oldData.fixedExpenses) {
+                oldData.fixedExpenses.forEach(item => {
+                    transactions.push({
+                        id: item.id || generateId(),
+                        category: item.category,
+                        type: 'expense',
+                        amount: item.amount,
+                        accountId: mainAccountId,
+                        icon: item.icon || getIconForCategory(item.category),
+                        recurring: item.recurring || false
+                    });
+                });
+            }
+
+            // Convertir les dépenses variables
+            if (oldData.variableExpenses) {
+                oldData.variableExpenses.forEach(item => {
+                    transactions.push({
+                        id: item.id || generateId(),
+                        category: item.category,
+                        type: 'expense',
+                        amount: item.amount,
+                        accountId: mainAccountId,
+                        icon: item.icon || getIconForCategory(item.category),
+                        recurring: item.recurring || false
+                    });
+                });
+            }
+
+            // Convertir les comptes (amount devient initialBalance)
+            const accounts = oldData.accounts.map(acc => ({
+                id: acc.id || generateId(),
+                name: acc.name,
+                initialBalance: acc.amount || acc.initialBalance || 0
+            }));
+
+            return {
+                accounts,
+                transactions,
+                goals: oldData.goals || []
+            };
+        }
+
+        // ============================================
+        // CHARGEMENT ET SAUVEGARDE
+        // ============================================
 
         function loadBudget(date) {
             const key = getStorageKey(date);
             const stored = localStorage.getItem(key);
+
             if (stored) {
-                budgetData = JSON.parse(stored);
-                // Ensure icons and IDs exist for old data
-                budgetData.accounts.forEach(item => {
-                    ensureItemHasId(item);
+                const rawData = JSON.parse(stored);
+                budgetData = migrateOldData(rawData);
+
+                // S'assurer que tous les éléments ont un ID
+                budgetData.accounts.forEach(acc => {
+                    if (!acc.id) acc.id = generateId();
                 });
-                budgetData.income.forEach(item => {
-                    ensureItemHasId(item);
-                    if (!item.icon) item.icon = getIconForCategory(item.category);
-                    if (item.recurring === undefined) item.recurring = false;
-                });
-                budgetData.fixedExpenses.forEach(item => {
-                    ensureItemHasId(item);
-                    if (!item.icon) item.icon = getIconForCategory(item.category);
-                    if (item.recurring === undefined) item.recurring = false;
-                });
-                budgetData.variableExpenses.forEach(item => {
-                    ensureItemHasId(item);
-                    if (!item.icon) item.icon = getIconForCategory(item.category);
-                    if (item.recurring === undefined) item.recurring = false;
+                budgetData.transactions.forEach(txn => {
+                    if (!txn.id) txn.id = generateId();
+                    if (!txn.icon) txn.icon = getIconForCategory(txn.category);
                 });
                 if (!budgetData.goals) budgetData.goals = [];
-                budgetData.goals.forEach(item => ensureItemHasId(item));
-                if (budgetData.previousMonthCarryover === undefined) budgetData.previousMonthCarryover = 0;
+
             } else {
-                // Check for previous month to copy recurring items
+                // Nouveau mois : chercher le mois précédent
                 const prevMonth = new Date(date);
                 prevMonth.setMonth(prevMonth.getMonth() - 1);
                 const prevKey = getStorageKey(prevMonth);
                 const prevStored = localStorage.getItem(prevKey);
-                
+
                 if (prevStored) {
-                    const prevData = JSON.parse(prevStored);
-                    const prevBudget = calculateBudget(prevData);
+                    const prevData = migrateOldData(JSON.parse(prevStored));
+
+                    // Le solde final du mois précédent devient le solde initial
+                    const mainAccount = prevData.accounts.find(a => a.name === 'Compte Courant');
+                    const prevFinalBalance = mainAccount ? getAccountBalanceFromData(prevData, mainAccount.id) : 0;
 
                     budgetData = {
-                        accounts: prevData.accounts.map(a => ({...a, id: generateId()})),
-                        income: prevData.income.filter(i => i.recurring).map(i => ({...i, id: generateId()})),
-                        fixedExpenses: prevData.fixedExpenses.filter(e => e.recurring).map(e => ({...e, id: generateId()})),
-                        variableExpenses: prevData.variableExpenses.filter(e => e.recurring).map(e => ({...e, id: generateId()})),
-                        goals: prevData.goals ? prevData.goals.map(g => ({...g, id: generateId()})) : [],
-                        previousMonthCarryover: prevBudget > 0 ? prevBudget : 0
+                        accounts: prevData.accounts.map(acc => ({
+                            id: generateId(),
+                            name: acc.name,
+                            // Le solde initial = solde final du mois précédent (pour le compte courant)
+                            initialBalance: acc.name === 'Compte Courant' ? prevFinalBalance : (acc.initialBalance || 0)
+                        })),
+                        // Copier seulement les transactions récurrentes
+                        transactions: prevData.transactions
+                            .filter(t => t.recurring)
+                            .map(t => ({
+                                ...t,
+                                id: generateId(),
+                                accountId: 'acc_1' // Lier au compte courant par défaut
+                            })),
+                        goals: prevData.goals ? prevData.goals.map(g => ({...g, id: generateId()})) : []
                     };
+
+                    // Mettre à jour les accountId des transactions
+                    const newMainAccountId = budgetData.accounts.find(a => a.name === 'Compte Courant')?.id;
+                    if (newMainAccountId) {
+                        budgetData.transactions.forEach(t => t.accountId = newMainAccountId);
+                    }
+
                 } else {
+                    // Premier mois sans données
                     budgetData = {
                         accounts: [
-                            { id: generateId(), name: 'Compte Courant', amount: 0 },
-                            { id: generateId(), name: 'Livret B', amount: 0 },
-                            { id: generateId(), name: 'Livret Jeune', amount: 0 }
+                            { id: generateId(), name: 'Compte Courant', initialBalance: 0 },
+                            { id: generateId(), name: 'Livret A', initialBalance: 0 },
+                            { id: generateId(), name: 'Livret Jeune', initialBalance: 0 }
                         ],
-                        income: [],
-                        fixedExpenses: [],
-                        variableExpenses: [],
-                        goals: [],
-                        previousMonthCarryover: 0
+                        transactions: [],
+                        goals: []
                     };
                 }
             }
+        }
+
+        // Calcul du solde à partir de données arbitraires (pour le mois précédent)
+        function getAccountBalanceFromData(data, accountId) {
+            const account = data.accounts.find(a => a.id === accountId);
+            if (!account) return 0;
+
+            let balance = account.initialBalance || 0;
+
+            data.transactions
+                .filter(t => t.accountId === accountId)
+                .forEach(t => {
+                    if (t.type === 'income') {
+                        balance += t.amount;
+                    } else {
+                        balance -= t.amount;
+                    }
+                });
+
+            return balance;
         }
 
         function saveBudget() {
@@ -2105,44 +2244,42 @@
             }, 2000);
         }
 
-        // Calculation functions
-        function calculateTotal(array) {
-            return array.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-        }
-
-        function calculateBudget(data = budgetData) {
-            const totalIncome = calculateTotal(data.income);
-            const totalFixedExpenses = calculateTotal(data.fixedExpenses);
-            const totalVariableExpenses = calculateTotal(data.variableExpenses);
-            return totalIncome - totalFixedExpenses - totalVariableExpenses + (data.previousMonthCarryover || 0);
-        }
+        // ============================================
+        // AFFICHAGE DU SOLDE (COMPTE BANCAIRE RÉEL)
+        // ============================================
 
         function updateBudgetDisplay() {
-            const budget = calculateBudget();
+            // Trouver le compte courant
+            const mainAccount = budgetData.accounts.find(a => a.name === 'Compte Courant');
+            if (!mainAccount) return;
+
+            // Calculer le solde courant = Solde Initial + Revenus - Dépenses
+            const currentBalance = getAccountBalance(mainAccount.id);
+            const initialBalance = mainAccount.initialBalance || 0;
+            const totalIncome = getTotalIncome(mainAccount.id);
+            const totalExpenses = getTotalExpenses(mainAccount.id);
+
             const budgetEl = document.getElementById('budget-amount');
             const dailyBudgetEl = document.getElementById('daily-budget');
             const carryoverEl = document.getElementById('carryover-display');
 
-            budgetEl.textContent = formatAmount(budget);
+            // Afficher le solde courant (ce qui reste sur le compte)
+            budgetEl.textContent = formatAmount(currentBalance);
 
+            // Budget quotidien restant
             const daysLeft = getDaysLeftInMonth();
-            const dailyBudget = budget / daysLeft;
+            const dailyBudget = currentBalance / daysLeft;
             dailyBudgetEl.innerHTML = `Par jour: <strong>${formatAmount(dailyBudget)}</strong>`;
 
-            // Display carryover from previous month
-            const carryover = budgetData.previousMonthCarryover || 0;
-            if (carryover !== 0) {
-                carryoverEl.style.display = 'block';
-                const carryoverColor = carryover >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)';
-                carryoverEl.innerHTML = `Report: <strong style="color: ${carryoverColor}">${formatAmount(carryover)}</strong>`;
-            } else {
-                carryoverEl.style.display = 'none';
-            }
+            // Afficher le solde initial du mois
+            carryoverEl.style.display = 'block';
+            carryoverEl.innerHTML = `Solde initial: <strong style="color: var(--text-primary)">${formatAmount(initialBalance)}</strong>`;
 
+            // Couleur selon le solde
             budgetEl.className = 'budget-amount';
-            if (budget > 100) {
+            if (currentBalance > 100) {
                 budgetEl.classList.add('positive');
-            } else if (budget < 0) {
+            } else if (currentBalance < 0) {
                 budgetEl.classList.add('negative');
             } else {
                 budgetEl.classList.add('warning');
@@ -2235,106 +2372,101 @@
         }
 
         function updateCharts() {
-            const allExpenses = [...budgetData.fixedExpenses, ...budgetData.variableExpenses];
-            
+            // Récupérer toutes les dépenses
+            const expenses = getTransactionsByType('expense');
+
             if (expensesChart) {
-                expensesChart.data.labels = allExpenses.map(e => e.category);
-                expensesChart.data.datasets[0].data = allExpenses.map(e => e.amount);
+                expensesChart.data.labels = expenses.map(e => e.category);
+                expensesChart.data.datasets[0].data = expenses.map(e => e.amount);
                 expensesChart.update();
             }
-            
+
             if (incomeExpensesChart) {
                 incomeExpensesChart.data.datasets[0].data = [
-                    calculateTotal(budgetData.income),
-                    calculateTotal(budgetData.fixedExpenses),
-                    calculateTotal(budgetData.variableExpenses)
+                    getTotalIncome(),
+                    getTotalExpenses()
                 ];
+                incomeExpensesChart.data.labels = ['Revenus', 'Dépenses'];
+                incomeExpensesChart.data.datasets[0].backgroundColor = ['#22c55e', '#ef4444'];
                 incomeExpensesChart.update();
             }
         }
 
-        // Calculate account balances reflecting transactions
-        function getAccountBalances() {
-            const balances = budgetData.accounts.map(acc => ({...acc}));
-            const compteCourant = balances.find(a => a.name === 'Compte Courant');
+        // ============================================
+        // FONCTIONS DE RENDU
+        // ============================================
 
-            if (compteCourant) {
-                // The stored amount is the "initial balance"
-                // We add income and subtract expenses for the month's flow
-                const totalIncome = calculateTotal(budgetData.income);
-                const totalFixedExpenses = calculateTotal(budgetData.fixedExpenses);
-                const totalVariableExpenses = calculateTotal(budgetData.variableExpenses);
-
-                compteCourant.calculatedAmount = compteCourant.amount + totalIncome - totalFixedExpenses - totalVariableExpenses;
-            }
-
-            return balances;
-        }
-
-        // Render functions
         function renderAccounts() {
             const lists = ['accounts-list', 'accounts-list-full'];
-            const balances = getAccountBalances();
 
             lists.forEach(listId => {
                 const list = document.getElementById(listId);
                 if (!list) return;
                 list.innerHTML = '';
 
-                balances.forEach((account) => {
-                    const displayAmount = account.calculatedAmount !== undefined ? account.calculatedAmount : account.amount;
-                    const isCompteC = account.name === 'Compte Courant';
+                budgetData.accounts.forEach((account) => {
+                    // Calculer le solde courant pour chaque compte
+                    const currentBalance = getAccountBalance(account.id);
+                    const initialBalance = account.initialBalance || 0;
+                    const isMainAccount = account.name === 'Compte Courant';
 
                     const item = document.createElement('div');
                     item.className = 'account-item';
                     item.innerHTML = `
-                        <span class="account-name">${account.name}${isCompteC ? ' <span style="font-size: 0.75rem; color: var(--text-muted);">(après transactions)</span>' : ''}</span>
-                        <span class="account-amount${isCompteC ? '' : ''}" data-id="${account.id}" data-type="accounts" ${isCompteC ? 'title="Solde initial: ' + formatAmount(account.amount) + '"' : ''}>${formatAmount(displayAmount)}</span>
+                        <div style="display: flex; flex-direction: column;">
+                            <span class="account-name">${account.name}</span>
+                            ${isMainAccount ? `<span style="font-size: 0.7rem; color: var(--text-muted);">Initial: ${formatAmount(initialBalance)}</span>` : ''}
+                        </div>
+                        <span class="account-amount" data-id="${account.id}" data-type="accounts" style="color: ${currentBalance >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatAmount(currentBalance)}</span>
                     `;
                     list.appendChild(item);
                 });
 
-                const totalAmount = balances.reduce((sum, acc) => {
-                    return sum + (acc.calculatedAmount !== undefined ? acc.calculatedAmount : acc.amount);
-                }, 0);
+                // Total de tous les comptes
+                const totalBalance = budgetData.accounts.reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
 
                 const total = document.createElement('div');
                 total.className = 'account-item account-total';
                 total.innerHTML = `
-                    <span class="account-name">TOTAL</span>
-                    <span class="account-amount">${formatAmount(totalAmount)}</span>
+                    <span class="account-name">PATRIMOINE TOTAL</span>
+                    <span class="account-amount" style="color: ${totalBalance >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatAmount(totalBalance)}</span>
                 `;
                 list.appendChild(total);
 
+                // Permettre de modifier le solde initial
                 list.querySelectorAll('.account-amount[data-id]').forEach(el => {
-                    el.addEventListener('click', (e) => handleAmountEdit(e));
+                    el.addEventListener('click', (e) => handleInitialBalanceEdit(e));
                 });
             });
         }
 
-        function renderTransactions(type, listId, totalId) {
+        // Rendre une liste de transactions filtrée par type
+        // type: 'income' ou 'expense'
+        function renderTransactionList(transactionType, listId, totalId) {
             const list = document.getElementById(listId);
             if (!list) return;
 
-            const data = budgetData[type];
+            const transactions = budgetData.transactions.filter(t => t.type === transactionType);
             list.innerHTML = '';
 
-            data.forEach((item) => {
+            transactions.forEach((item) => {
                 const div = document.createElement('div');
                 div.className = 'transaction-item';
                 div.innerHTML = `
                     <div class="transaction-left">
-                        <div class="transaction-icon">
-                            <i data-lucide="${item.icon || 'circle-dollar-sign'}"></i>
+                        <div class="transaction-icon" style="background: ${transactionType === 'income' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)'}">
+                            <i data-lucide="${item.icon || 'circle-dollar-sign'}" style="color: ${transactionType === 'income' ? 'var(--accent-success)' : 'var(--accent-danger)'}"></i>
                         </div>
                         <div class="transaction-details">
-                            <span class="transaction-name" data-type="${type}" data-id="${item.id}">${item.category}</span>
+                            <span class="transaction-name" data-id="${item.id}">${item.category}</span>
                             ${item.recurring ? '<span class="transaction-recurring">Récurrent</span>' : ''}
                         </div>
                     </div>
                     <div class="transaction-right">
-                        <span class="transaction-amount" data-type="${type}" data-id="${item.id}">${formatAmount(item.amount)}</span>
-                        <button class="btn-delete" data-type="${type}" data-id="${item.id}">
+                        <span class="transaction-amount" data-id="${item.id}" style="color: ${transactionType === 'income' ? 'var(--accent-success)' : 'var(--accent-danger)'}">
+                            ${transactionType === 'income' ? '+' : '-'}${formatAmount(item.amount)}
+                        </span>
+                        <button class="btn-delete" data-id="${item.id}">
                             <i data-lucide="trash-2"></i>
                         </button>
                     </div>
@@ -2344,7 +2476,9 @@
 
             const totalEl = document.getElementById(totalId);
             if (totalEl) {
-                totalEl.textContent = formatAmount(calculateTotal(data));
+                const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+                const prefix = transactionType === 'income' ? '+' : '-';
+                totalEl.textContent = prefix + formatAmount(total);
             }
 
             list.querySelectorAll('.transaction-name').forEach(el => {
@@ -2352,7 +2486,7 @@
             });
 
             list.querySelectorAll('.transaction-amount').forEach(el => {
-                el.addEventListener('click', (e) => handleAmountEdit(e));
+                el.addEventListener('click', (e) => handleTransactionAmountEdit(e));
             });
 
             list.querySelectorAll('.btn-delete').forEach(el => {
@@ -2365,33 +2499,29 @@
         function renderAllExpenses() {
             const list = document.getElementById('all-expenses-list');
             if (!list) return;
-            
-            list.innerHTML = '';
-            
-            const allExpenses = [
-                ...budgetData.fixedExpenses.map(e => ({...e, type: 'fixedExpenses'})),
-                ...budgetData.variableExpenses.map(e => ({...e, type: 'variableExpenses'}))
-            ];
 
-            allExpenses.forEach((item) => {
+            list.innerHTML = '';
+
+            const expenses = getTransactionsByType('expense');
+
+            expenses.forEach((item) => {
                 const div = document.createElement('div');
                 div.className = 'transaction-item';
                 div.innerHTML = `
                     <div class="transaction-left">
-                        <div class="transaction-icon">
-                            <i data-lucide="${item.icon || 'circle-dollar-sign'}"></i>
+                        <div class="transaction-icon" style="background: rgba(239, 68, 68, 0.15)">
+                            <i data-lucide="${item.icon || 'circle-dollar-sign'}" style="color: var(--accent-danger)"></i>
                         </div>
                         <span class="transaction-name">${item.category}</span>
                     </div>
-                    <span class="transaction-amount">${formatAmount(item.amount)}</span>
+                    <span class="transaction-amount" style="color: var(--accent-danger)">-${formatAmount(item.amount)}</span>
                 `;
                 list.appendChild(div);
             });
 
             const totalEl = document.getElementById('all-expenses-total');
             if (totalEl) {
-                const total = calculateTotal(budgetData.fixedExpenses) + calculateTotal(budgetData.variableExpenses);
-                totalEl.textContent = formatAmount(total);
+                totalEl.textContent = formatAmount(getTotalExpenses());
             }
 
             lucide.createIcons();
@@ -2443,10 +2573,18 @@
         function render() {
             document.getElementById('month-title').textContent = formatMonthYear(currentMonth);
             renderAccounts();
-            renderTransactions('income', 'income-list', 'income-total');
-            renderTransactions('income', 'income-list-2', 'income-total-2');
-            renderTransactions('fixedExpenses', 'fixed-expenses-list', 'fixed-expenses-total');
-            renderTransactions('variableExpenses', 'variable-expenses-list', 'variable-expenses-total');
+            // Revenus (type: 'income')
+            renderTransactionList('income', 'income-list', 'income-total');
+            renderTransactionList('income', 'income-list-2', 'income-total-2');
+            // Dépenses (type: 'expense') - on utilise la même liste mais on peut filtrer si besoin
+            renderTransactionList('expense', 'fixed-expenses-list', 'fixed-expenses-total');
+            // Pour les dépenses variables, on réutilise la même liste (tout est "expense")
+            // On peut masquer cette section ou la fusionner
+            const varList = document.getElementById('variable-expenses-list');
+            if (varList) varList.innerHTML = ''; // On vide car tout est dans fixed-expenses-list
+            const varTotal = document.getElementById('variable-expenses-total');
+            if (varTotal) varTotal.textContent = '0,00 €';
+
             renderAllExpenses();
             renderGoals();
             updateBudgetDisplay();
@@ -2454,45 +2592,51 @@
             lucide.createIcons();
         }
 
-        // Helper to find item by ID
-        function findItemById(type, id) {
-            return budgetData[type].find(item => item.id === id);
+        // ============================================
+        // RECHERCHE DE TRANSACTIONS
+        // ============================================
+
+        function findTransactionById(id) {
+            return budgetData.transactions.find(t => t.id === id);
         }
 
-        function findItemIndexById(type, id) {
-            return budgetData[type].findIndex(item => item.id === id);
+        function findTransactionIndex(id) {
+            return budgetData.transactions.findIndex(t => t.id === id);
         }
 
-        // Inline editing handlers
-        function handleAmountEdit(e) {
+        // ============================================
+        // ÉDITION DU SOLDE INITIAL D'UN COMPTE
+        // ============================================
+
+        function handleInitialBalanceEdit(e) {
             if (editingElement) return;
 
             const el = e.target;
-            const type = el.dataset.type;
-            const id = el.dataset.id;
-            const item = findItemById(type, id);
-            if (!item) return;
+            const accountId = el.dataset.id;
+            const account = budgetData.accounts.find(a => a.id === accountId);
+            if (!account) return;
 
-            const currentValue = item.amount;
+            const currentValue = account.initialBalance || 0;
 
             editingElement = el;
             const input = document.createElement('input');
-            input.type = 'number';
-            input.step = '0.01';
+            input.type = 'text';
+            input.inputMode = 'decimal';
+            input.style.cssText = 'width: 100px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--accent-primary); background: var(--bg-tertiary); color: var(--text-primary);';
             input.value = currentValue;
 
             const finish = () => {
                 const newValue = parseLocalizedNumber(input.value);
-                item.amount = newValue;
+                account.initialBalance = newValue;
                 editingElement = null;
                 debouncedSave();
                 render();
             };
 
             input.addEventListener('blur', finish);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') finish();
-                if (e.key === 'Escape') {
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter') finish();
+                if (ev.key === 'Escape') {
                     editingElement = null;
                     render();
                 }
@@ -2503,26 +2647,28 @@
             input.select();
         }
 
-        function handleCategoryEdit(e) {
+        // Édition du montant d'une transaction
+        function handleTransactionAmountEdit(e) {
             if (editingElement) return;
 
             const el = e.target;
-            const type = el.dataset.type;
             const id = el.dataset.id;
-            const item = findItemById(type, id);
-            if (!item) return;
+            const transaction = findTransactionById(id);
+            if (!transaction) return;
 
-            const currentValue = item.category;
+            const currentValue = transaction.amount;
 
             editingElement = el;
             const input = document.createElement('input');
             input.type = 'text';
+            input.inputMode = 'decimal';
+            input.style.cssText = 'width: 80px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--accent-primary); background: var(--bg-tertiary); color: var(--text-primary);';
             input.value = currentValue;
 
             const finish = () => {
-                const newValue = input.value.trim();
-                if (newValue) {
-                    item.category = newValue;
+                const newValue = parseLocalizedNumber(input.value);
+                if (newValue > 0) {
+                    transaction.amount = newValue;
                     debouncedSave();
                 }
                 editingElement = null;
@@ -2530,9 +2676,9 @@
             };
 
             input.addEventListener('blur', finish);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') finish();
-                if (e.key === 'Escape') {
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter') finish();
+                if (ev.key === 'Escape') {
                     editingElement = null;
                     render();
                 }
@@ -2543,14 +2689,55 @@
             input.select();
         }
 
+        // Édition de la catégorie d'une transaction
+        function handleCategoryEdit(e) {
+            if (editingElement) return;
+
+            const el = e.target;
+            const id = el.dataset.id;
+            const transaction = findTransactionById(id);
+            if (!transaction) return;
+
+            const currentValue = transaction.category;
+
+            editingElement = el;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.style.cssText = 'width: 150px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--accent-primary); background: var(--bg-tertiary); color: var(--text-primary);';
+            input.value = currentValue;
+
+            const finish = () => {
+                const newValue = input.value.trim();
+                if (newValue) {
+                    transaction.category = newValue;
+                    debouncedSave();
+                }
+                editingElement = null;
+                render();
+            };
+
+            input.addEventListener('blur', finish);
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter') finish();
+                if (ev.key === 'Escape') {
+                    editingElement = null;
+                    render();
+                }
+            });
+
+            el.replaceWith(input);
+            input.focus();
+            input.select();
+        }
+
+        // Suppression d'une transaction
         function handleDelete(e) {
             const btn = e.target.closest('.btn-delete');
-            const type = btn.dataset.type;
             const id = btn.dataset.id;
-            const item = findItemById(type, id);
+            const transaction = findTransactionById(id);
 
-            if (item) {
-                pendingDelete = { type, id, name: item.category || item.name };
+            if (transaction) {
+                pendingDelete = { type: 'transactions', id, name: transaction.category };
                 document.getElementById('delete-item-name').textContent = pendingDelete.name;
                 openModal('modal-delete-confirm');
             }
@@ -2569,16 +2756,21 @@
             if (!pendingDelete) return;
 
             const { type, id } = pendingDelete;
-            const index = type === 'goals'
-                ? budgetData.goals.findIndex(g => g.id === id)
-                : findItemIndexById(type, id);
 
-            if (index !== -1) {
-                budgetData[type].splice(index, 1);
-                debouncedSave();
-                render();
+            if (type === 'goals') {
+                const index = budgetData.goals.findIndex(g => g.id === id);
+                if (index !== -1) {
+                    budgetData.goals.splice(index, 1);
+                }
+            } else if (type === 'transactions') {
+                const index = findTransactionIndex(id);
+                if (index !== -1) {
+                    budgetData.transactions.splice(index, 1);
+                }
             }
 
+            debouncedSave();
+            render();
             pendingDelete = null;
             closeModal('modal-delete-confirm');
         }
@@ -2622,7 +2814,7 @@
         function submitTransaction() {
             const category = document.getElementById('transaction-category').value.trim();
             const amount = parseLocalizedNumber(document.getElementById('transaction-amount').value);
-            const type = document.querySelector('input[name="transaction-type"]:checked').value;
+            const typeValue = document.querySelector('input[name="transaction-type"]:checked').value;
             const recurring = document.getElementById('transaction-recurring').checked;
 
             if (!category) {
@@ -2635,24 +2827,28 @@
                 return;
             }
 
-            const typeMap = {
-                income: 'income',
-                fixed: 'fixedExpenses',
-                variable: 'variableExpenses'
-            };
+            // Convertir vers le nouveau format : 'income' ou 'expense'
+            const transactionType = typeValue === 'income' ? 'income' : 'expense';
 
-            budgetData[typeMap[type]].push({
+            // Trouver le compte courant
+            const mainAccount = budgetData.accounts.find(a => a.name === 'Compte Courant');
+            const accountId = mainAccount ? mainAccount.id : budgetData.accounts[0]?.id;
+
+            // Créer la transaction unique
+            budgetData.transactions.push({
                 id: generateId(),
                 category,
+                type: transactionType,
                 amount,
+                accountId,
                 icon: selectedIcon,
                 recurring
             });
-            
+
             debouncedSave();
             render();
             closeModal('modal-transaction');
-            
+
             // Reset
             document.getElementById('transaction-category').value = '';
             document.getElementById('transaction-amount').value = '';
@@ -2705,7 +2901,7 @@
             render();
         }
 
-        // Copy fixed charges from previous month
+        // Copy recurring transactions from previous month
         function copyFromPreviousMonth() {
             const prevMonth = new Date(currentMonth);
             prevMonth.setMonth(prevMonth.getMonth() - 1);
@@ -2717,32 +2913,23 @@
                 return;
             }
 
-            const prevData = JSON.parse(prevStored);
+            const prevData = migrateOldData(JSON.parse(prevStored));
+            const mainAccount = budgetData.accounts.find(a => a.name === 'Compte Courant');
+            const accountId = mainAccount ? mainAccount.id : budgetData.accounts[0]?.id;
+
             let copied = 0;
 
-            // Copy recurring income
-            prevData.income.filter(i => i.recurring).forEach(item => {
-                const exists = budgetData.income.some(i => i.category === item.category);
+            // Copy recurring transactions
+            prevData.transactions.filter(t => t.recurring).forEach(item => {
+                const exists = budgetData.transactions.some(t =>
+                    t.category === item.category && t.type === item.type
+                );
                 if (!exists) {
-                    budgetData.income.push({...item, id: generateId()});
-                    copied++;
-                }
-            });
-
-            // Copy recurring fixed expenses
-            prevData.fixedExpenses.filter(e => e.recurring).forEach(item => {
-                const exists = budgetData.fixedExpenses.some(e => e.category === item.category);
-                if (!exists) {
-                    budgetData.fixedExpenses.push({...item, id: generateId()});
-                    copied++;
-                }
-            });
-
-            // Copy recurring variable expenses
-            prevData.variableExpenses.filter(e => e.recurring).forEach(item => {
-                const exists = budgetData.variableExpenses.some(e => e.category === item.category);
-                if (!exists) {
-                    budgetData.variableExpenses.push({...item, id: generateId()});
+                    budgetData.transactions.push({
+                        ...item,
+                        id: generateId(),
+                        accountId
+                    });
                     copied++;
                 }
             });
@@ -2750,9 +2937,9 @@
             if (copied > 0) {
                 debouncedSave();
                 render();
-                alert(`${copied} élément(s) récurrent(s) copié(s) depuis le mois précédent.`);
+                alert(`${copied} transaction(s) récurrente(s) copiée(s) depuis le mois précédent.`);
             } else {
-                alert('Tous les éléments récurrents sont déjà présents.');
+                alert('Toutes les transactions récurrentes sont déjà présentes.');
             }
         }
 
@@ -2769,17 +2956,10 @@
 
         function exportCSV() {
             let csv = 'Type,Catégorie,Montant,Récurrent\n';
-            
-            budgetData.income.forEach(item => {
-                csv += `Revenu,"${item.category}",${item.amount},${item.recurring ? 'Oui' : 'Non'}\n`;
-            });
-            
-            budgetData.fixedExpenses.forEach(item => {
-                csv += `Dépense fixe,"${item.category}",${item.amount},${item.recurring ? 'Oui' : 'Non'}\n`;
-            });
-            
-            budgetData.variableExpenses.forEach(item => {
-                csv += `Dépense variable,"${item.category}",${item.amount},${item.recurring ? 'Oui' : 'Non'}\n`;
+
+            budgetData.transactions.forEach(item => {
+                const typeLabel = item.type === 'income' ? 'Revenu' : 'Dépense';
+                csv += `${typeLabel},"${item.category}",${item.amount},${item.recurring ? 'Oui' : 'Non'}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
