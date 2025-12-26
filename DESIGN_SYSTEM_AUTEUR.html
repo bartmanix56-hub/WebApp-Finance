@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System d'Auteur</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg: #ffffff;
+            --color-surface: #fafafa;
+            --color-border: #e5e5e5;
+            --color-text-primary: #171717;
+            --color-text-secondary: #737373;
+            --color-accent: #3b82f6;
+            --spacing-unit: 8px;
+            --radius: 2px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: calc(var(--spacing-unit) * 10) calc(var(--spacing-unit) * 4);
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: calc(var(--spacing-unit) * 12);
+            padding-bottom: calc(var(--spacing-unit) * 6);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            color: var(--color-text-primary);
+        }
+
+        .header p {
+            font-size: 16px;
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            line-height: 1.7;
+        }
+
+        /* Manifesto */
+        .manifesto {
+            background: var(--color-surface);
+            padding: calc(var(--spacing-unit) * 6);
+            margin-bottom: calc(var(--spacing-unit) * 12);
+            border-left: 2px solid var(--color-text-primary);
+        }
+
+        .manifesto p {
+            font-size: 20px;
+            line-height: 1.7;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: calc(var(--spacing-unit) * 12);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: calc(var(--spacing-unit) * 6);
+            color: var(--color-text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        /* Pillars Grid */
+        .pillars {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: calc(var(--spacing-unit) * 4);
+        }
+
+        .pillar {
+            background: var(--color-surface);
+            padding: calc(var(--spacing-unit) * 4);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+        }
+
+        .pillar-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            color: var(--color-text-primary);
+        }
+
+        .pillar-description {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: calc(var(--spacing-unit) * 3);
+            line-height: 1.7;
+        }
+
+        .pillar-signature {
+            font-size: 13px;
+            color: var(--color-text-primary);
+            padding: calc(var(--spacing-unit) * 2);
+            background: var(--color-bg);
+            border-left: 2px solid var(--color-accent);
+            font-style: italic;
+        }
+
+        /* Grammar Grid */
+        .grammar {
+            display: grid;
+            gap: calc(var(--spacing-unit) * 6);
+        }
+
+        .grammar-block {
+            padding-bottom: calc(var(--spacing-unit) * 4);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .grammar-block:last-child {
+            border-bottom: none;
+        }
+
+        .grammar-block h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: calc(var(--spacing-unit) * 3);
+            color: var(--color-text-primary);
+        }
+
+        .grammar-rule {
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            padding-left: calc(var(--spacing-unit) * 3);
+            position: relative;
+        }
+
+        .grammar-rule::before {
+            content: '—';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+        }
+
+        .grammar-rule-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: calc(var(--spacing-unit) * 0.5);
+        }
+
+        .grammar-rule-description {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Interactions List */
+        .interactions-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: calc(var(--spacing-unit) * 3);
+        }
+
+        .interaction-item {
+            padding: calc(var(--spacing-unit) * 3);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+        }
+
+        .interaction-item h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: calc(var(--spacing-unit) * 1);
+            color: var(--color-text-primary);
+        }
+
+        .interaction-item p {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Forbidden Grid */
+        .forbidden-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: calc(var(--spacing-unit) * 2);
+        }
+
+        .forbidden-item {
+            padding: calc(var(--spacing-unit) * 3);
+            text-align: center;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            position: relative;
+        }
+
+        .forbidden-item::before {
+            content: '✕';
+            position: absolute;
+            top: calc(var(--spacing-unit) * 1);
+            right: calc(var(--spacing-unit) * 1);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .forbidden-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: calc(var(--spacing-unit) * 1);
+        }
+
+        .forbidden-item-description {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Closing Quote */
+        .closing {
+            margin-top: calc(var(--spacing-unit) * 12);
+            padding: calc(var(--spacing-unit) * 8) 0;
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .closing p {
+            font-size: 22px;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+            font-weight: 500;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: calc(var(--spacing-unit) * 6) calc(var(--spacing-unit) * 3);
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .manifesto p {
+                font-size: 18px;
+            }
+
+            .section-title {
+                font-size: 20px;
+            }
+
+            .pillars {
+                grid-template-columns: 1fr;
+            }
+
+            .interactions-list {
+                grid-template-columns: 1fr;
+            }
+
+            .forbidden-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .closing p {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header -->
+        <header class="header">
+            <h1>Design System d'Auteur</h1>
+            <p>Ce document définit une signature UX transversale, reconnaissable à travers plusieurs applications différentes. Il ne prescrit pas de couleurs ou de polices spécifiques, mais formalise des principes, des règles de grammaire visuelle et des comportements qui créent une expérience cohérente et identifiable.</p>
+        </header>
+
+        <!-- Manifesto -->
+        <section class="manifesto">
+            <p>Des outils clairs, bienveillants et précis.<br>Zéro bruit. Zéro culpabilité. Maximum de contrôle.</p>
+        </section>
+
+        <!-- Pillars -->
+        <section class="section">
+            <h2 class="section-title">Les 5 piliers non négociables</h2>
+            <div class="pillars">
+                
+                <div class="pillar">
+                    <div class="pillar-title">Clarté avant tout</div>
+                    <div class="pillar-description">Chaque élément doit avoir une raison d'être. L'interface ne doit jamais forcer l'utilisateur à deviner. Hiérarchie visuelle nette, labels explicites, états clairs.</div>
+                    <div class="pillar-signature">Signature : on sait toujours où on est et ce qu'on peut faire.</div>
+                </div>
+
+                <div class="pillar">
+                    <div class="pillar-title">Ton bienveillant, jamais moralisateur</div>
+                    <div class="pillar-description">Les messages sont neutres, précis, respectueux. Aucun jugement sur les choix de l'utilisateur. Les erreurs sont des opportunités de clarification, pas des réprimandes.</div>
+                    <div class="pillar-signature">Signature : l'outil accompagne, ne juge pas.</div>
+                </div>
+
+                <div class="pillar">
+                    <div class="pillar-title">Précision et contrôle utilisateur</div>
+                    <div class="pillar-description">L'utilisateur doit pouvoir affiner, ajuster, modifier. Les valeurs par défaut sont intelligentes mais jamais imposées. Export et import de données toujours possibles.</div>
+                    <div class="pillar-signature">Signature : autonomie complète, aucune infantilisation.</div>
+                </div>
+
+                <div class="pillar">
+                    <div class="pillar-title">Dopamine rare mais méritée</div>
+                    <div class="pillar-description">Les feedbacks positifs existent mais ne sont pas forcés. Pas de confettis gratuits, pas de streak artificiel. La satisfaction vient de l'accomplissement réel, pas de gamification superficielle.</div>
+                    <div class="pillar-signature">Signature : les récompenses ont du poids car elles sont rares.</div>
+                </div>
+
+                <div class="pillar">
+                    <div class="pillar-title">Moins, mais mieux</div>
+                    <div class="pillar-description">Chaque fonctionnalité doit être essentielle. Supprimer plutôt qu'ajouter. Privilégier la profondeur à la largeur. Un bon outil fait peu de choses, mais les fait parfaitement.</div>
+                    <div class="pillar-signature">Signature : aucune fonctionnalité inutile ne pollue l'expérience.</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Grammar -->
+        <section class="section">
+            <h2 class="section-title">Grammaire visuelle</h2>
+            <div class="grammar">
+                
+                <div class="grammar-block">
+                    <h3>Layout et grilles</h3>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Système d'espacement cohérent</div>
+                        <div class="grammar-rule-description">Utiliser un multiplicateur de base (4px, 8px) pour tous les espacements. Jamais de valeurs arbitraires.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Respiration verticale généreuse</div>
+                        <div class="grammar-rule-description">Les sections doivent respirer. Préférer trop d'espace à pas assez.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Largeur de lecture limitée</div>
+                        <div class="grammar-rule-description">Les colonnes de texte ne doivent jamais dépasser 70 caractères. Utiliser des max-width intelligents.</div>
+                    </div>
+                </div>
+
+                <div class="grammar-block">
+                    <h3>Cartes et élévation</h3>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Ombres minimales ou inexistantes</div>
+                        <div class="grammar-rule-description">Privilégier les bordures subtiles aux ombres lourdes. Si ombre, elle doit être à peine perceptible.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Border-radius cohérent</div>
+                        <div class="grammar-rule-description">Choisir une valeur de rayon et s'y tenir sur toute l'application. Petit rayon = sérieux, grand rayon = accessible.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Hiérarchie par contraste, pas par volume</div>
+                        <div class="grammar-rule-description">Éviter de multiplier les niveaux de cartes. Utiliser la couleur de fond, la bordure ou la typographie pour hiérarchiser.</div>
+                    </div>
+                </div>
+
+                <div class="grammar-block">
+                    <h3>Boutons et actions</h3>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Distinction visuelle nette</div>
+                        <div class="grammar-rule-description">Action primaire = visible, secondaire = sobre, destructive = rouge. Jamais d'ambiguïté.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Taille tactile minimale 44px</div>
+                        <div class="grammar-rule-description">Tous les éléments cliquables doivent avoir une zone de clic d'au moins 44x44px, même si visuellement plus petits.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">États hover/active cohérents</div>
+                        <div class="grammar-rule-description">Tous les éléments interactifs doivent avoir un état hover visible. Consistance absolue dans les transitions.</div>
+                    </div>
+                </div>
+
+                <div class="grammar-block">
+                    <h3>Typographie</h3>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Maximum 3 tailles de titres</div>
+                        <div class="grammar-rule-description">H1, H2, H3. Si besoin d'une 4ème hiérarchie, utiliser la couleur ou le poids, pas la taille.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Line-height adaptatif</div>
+                        <div class="grammar-rule-description">1.3-1.4 pour les titres, 1.6-1.7 pour le corps de texte. Jamais en dessous de 1.5 pour du texte long.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Police système par défaut acceptable</div>
+                        <div class="grammar-rule-description">San Francisco, Segoe UI, Roboto sont parfaites. Pas besoin de Google Fonts systématique.</div>
+                    </div>
+                </div>
+
+                <div class="grammar-block">
+                    <h3>Iconographie</h3>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Une seule famille d'icônes</div>
+                        <div class="grammar-rule-description">Choisir Lucide, Feather, Heroicons ou autre, mais jamais mélanger. Cohérence stricte du style.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Taille et stroke uniformes</div>
+                        <div class="grammar-rule-description">Si stroke de 2px, alors partout. Tailles : 16px, 20px, 24px. Jamais de valeurs intermédiaires.</div>
+                    </div>
+                    <div class="grammar-rule">
+                        <div class="grammar-rule-title">Icônes accompagnent, ne remplacent pas</div>
+                        <div class="grammar-rule-description">Toujours associer une icône à un label textuel, sauf pour des actions universelles (fermer, rechercher).</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Micro-interactions -->
+        <section class="section">
+            <h2 class="section-title">Micro-interactions (la signature invisible)</h2>
+            <div class="interactions-list">
+                
+                <div class="interaction-item">
+                    <h4>Auto-focus intelligent</h4>
+                    <p>À l'ouverture d'un modal ou d'un formulaire, le focus se place automatiquement sur le champ le plus pertinent.</p>
+                </div>
+
+                <div class="interaction-item">
+                    <h4>Raccourcis clavier professionnels</h4>
+                    <p>Échap pour fermer, Entrée pour valider, Tab pour naviguer. Support des raccourcis natifs du système.</p>
+                </div>
+
+                <div class="interaction-item">
+                    <h4>Feedback immédiat</h4>
+                    <p>Toute action déclenche une réponse visuelle instantanée. Pas de latence perçue, même si traitement en cours.</p>
+                </div>
+
+                <div class="interaction-item">
+                    <h4>Animations rapides et rares</h4>
+                    <p>150-200ms maximum. Elles servent à guider l'œil, pas à décorer. Désactivables si l'utilisateur préfère.</p>
+                </div>
+
+                <div class="interaction-item">
+                    <h4>Scroll position mémorisée</h4>
+                    <p>En navigation, l'utilisateur retrouve sa position exacte. Pas de retour brutal en haut de page.</p>
+                </div>
+
+                <div class="interaction-item">
+                    <h4>États de chargement honnêtes</h4>
+                    <p>Loaders discrets, indicateurs de progression réels. Jamais de faux chargement pour simuler du travail.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Forbidden -->
+        <section class="section">
+            <h2 class="section-title">Ce qui est interdit</h2>
+            <div class="forbidden-grid">
+                
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">Sur-design</div>
+                    <div class="forbidden-item-description">Gradients complexes, effets 3D, glassmorphism gratuit.</div>
+                </div>
+
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">Gamification forcée</div>
+                    <div class="forbidden-item-description">Badges inutiles, streaks artificiels, points sans valeur.</div>
+                </div>
+
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">Ton infantilisant</div>
+                    <div class="forbidden-item-description">Émojis excessifs, messages condescendants, langage bébé.</div>
+                </div>
+
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">Animations gratuites</div>
+                    <div class="forbidden-item-description">Confettis systématiques, éléments qui bougent sans raison.</div>
+                </div>
+
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">UI bruyante</div>
+                    <div class="forbidden-item-description">Pop-ups intrusifs, notifications non désirées, couleurs criardes.</div>
+                </div>
+
+                <div class="forbidden-item">
+                    <div class="forbidden-item-title">Culpabilisation utilisateur</div>
+                    <div class="forbidden-item-description">Messages de type "Dommage !", "Tu abandonnes ?", guilt-tripping.</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Closing -->
+        <section class="closing">
+            <p>On reconnaît un bon outil au fait qu'on oublie qu'il existe.</p>
+        </section>
+
+    </div>
+</body>
+</html>
